@@ -98,17 +98,24 @@ garden_harvest %>%
             by = "vegetable")
 ```
 
-Some of the 
+Some of the varieties planted had multiple harvests, so for every one entry in the garden_planting data set there could be multiple entries in the garden harvest data set. You could fix it by using pivot_wider on the garden_harvest data set so that there are the same number of entries in each data set. 
 
   3. I would like to understand how much money I "saved" by gardening, for each vegetable type. Describe how I could use the `garden_harvest` and `garden_spending` datasets, along with data from somewhere like [this](https://products.wholefoodsmarket.com/search?sort=relevance&store=10542) to answer this question. You can answer this in words, referencing various join functions. You don't need R code but could provide some if it's helpful.
+
+I would use left_join to join together (by vegetable and variety) the whole foods, garden_harvest, and garden_spending to get them all in one data set. I would then create a "total price" variable by mutating the total_pounds harvested times the price per pound. I would then create another variable "profit" which would be the total price minus the seed price.  
 
   4. Subset the data to tomatoes. Reorder the tomato varieties from smallest to largest first harvest date. Create a barplot of total harvest in pounds for each variety, in the new order.
 
 ```{r}
+garden_harvest %>% 
+  filter(vegetable == "tomatoes") %>% 
+  group_by(variety) %>%  
+  mutate(tot_weight = sum(weight)) %>%
+  ggplot(aes(x = variety), fct_reorder(variety, weight, sum)) +
+  geom_bar()
+``` 
 
-```
-
-  5. In the `garden_harvest` data, create two new variables: one that makes the varieties lowercase and another that finds the length of the variety name. Arrange the data by vegetable and length of variety name (smallest to largest), with one row for each vegetable variety. HINT: use `str_to_lower()`, `str_length()`, and `distinct()`.
+5. In the `garden_harvest` data, create two new variables: one that makes the varieties lowercase and another that finds the length of the variety name. Arrange the data by vegetable and length of variety name (smallest to largest), with one row for each vegetable variety. HINT: use `str_to_lower()`, `str_length()`, and `distinct()`.
   
 ```{r}
 
