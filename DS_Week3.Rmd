@@ -119,13 +119,20 @@ garden_harvest %>%
   
 ```{r}
 garden_harvest %>% 
-  
+  mutate(lowercase = str_to_lower(variety)) %>% 
+  mutate(str_len = str_length(lowercase)) %>% 
+  group_by(lowercase) %>%
+  slice(1)  %>% 
+  arrange(vegetable, str_len)
 ```
 
   6. In the `garden_harvest` data, find all distinct vegetable varieties that have "er" or "ar" in their name. HINT: `str_detect()` with an "or" statement (use the | for "or") and `distinct()`.
 
 ```{r}
-
+garden_harvest %>% 
+  group_by(variety) %>% 
+  mutate(has_er_ar = str_detect(variety, "er| ar" )) %>% 
+  slice(1)
 ```
 
 
