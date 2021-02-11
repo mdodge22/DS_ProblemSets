@@ -77,7 +77,7 @@ These exercises will reiterate what you learned in the "Expanding the data wrang
 
 ```{r}
 garden_harvest %>% 
-  mutate(weekday = wday(date),
+  mutate(weekday = wday(date, label = TRUE),
          lbs = weight/454) %>% 
   group_by(vegetable, weekday) %>% 
   summarize(veg_day_total = sum(lbs)) %>%
@@ -158,7 +158,7 @@ Here is the code to read in the data. We do this a little differently than usual
 
 ```{r cache=TRUE}
 data_site <- 
-  "https://www.macalester.edu/~dshuman1/data/112/2014-Q4-Trips-History-Data-Small.rds" 
+  "https://www.macalester.edu/~dshuman1/data/112/2014-Q4-Trips-History-Data.rds" 
 Trips <- readRDS(gzcon(url(data_site)))
 Stations<-read_csv("http://www.macalester.edu/~dshuman1/data/112/DC-Stations.csv")
 ```
@@ -294,13 +294,33 @@ The two plots seem to be telling us the same thing, that casual riders ride arou
   15. Use the latitude and longitude variables in `Stations` to make a visualization of the total number of departures from each station in the `Trips` data. Use either color or size to show the variation in number of departures. We will improve this plot next week when we learn about maps!
   
 ```{r}
-
+Trips %>% 
+  mutate(name = sstation) %>%
+  left_join(Stations, by = c("name")) %>% 
+  group_by(name) %>% 
+  mutate(departures = n()) %>% 
+   ggplot(aes(y = lat, x = long, color = departures)) +
+   geom_point() +
+   labs(title = "Location of Each Station and Number of Departures",
+        y = "Latitude",
+        x = "Longitude")
 ```
   
   16. Only 14.4% of the trips in our data are carried out by casual users. Create a plot that shows which area(s) have stations with a much higher percentage of departures by casual users. What patterns do you notice? (Again, we'll improve this next week when we learn about maps).
   
 ```{r}
-
+Trips %>% 
+  mutate(name = sstation) %>%
+  left_join(Stations, by = c("name")) %>% 
+  mutate(cas = client == "Casual") %>% 
+  group_by(name) %>% 
+  mutate(departures = n(),
+         cas_pct = sum(cas)/departures) %>% 
+   ggplot(aes(y = lat, x = long, color = cas_pct)) +
+   geom_point() +
+   labs(title = "Location of Each Station and Percentage of Casual Riders",
+        y = "Latitude",
+        x = "Longitude")
 ```
   
 ### Spatiotemporal patterns
@@ -308,16 +328,44 @@ The two plots seem to be telling us the same thing, that casual riders ride arou
   17. Make a table with the ten station-date combinations (e.g., 14th & V St., 2014-10-14) with the highest number of departures, sorted from most departures to fewest. Save this to a new dataset and print out the dataset. Hint: `as_date(sdate)` converts `sdate` from date-time format to date format. 
   
 ```{r}
+ten_stationdate <- 
+  Trips %>% 
+  mutate(reg_date = as_date(sdate)) %>% 
+  group_by(sstation, reg_date) %>% 
+  summarize(departures = n()) %>% 
+  arrange(desc(departures)) %>% 
+  head(10)
 
+ten_stationdate
 ```
   
   18. Use a join operation to make a table with only those trips whose departures match those top ten station-date combinations from the previous part.
   
 ```{r}
-
+Trips %>% 
+  mutate(reg_date = as_date(sdate),
+         week_day = wday(sdate, label = TRUE)) %>% 
+  right_join(ten_stationdate, by = c("sstation", "reg_date")) %>% 
+  arrange(desc(departures))
 ```
   
   19. Build on the code from the previous problem (ie. copy that code below and then %>% into the next step.) and group the trips by client type and day of the week (use the name, not the number). Find the proportion of trips by day within each client type (ie. the proportions for all 7 days within each client type add up to 1). Display your results so day of week is a column and there is a column for each client type. Interpret your results.
+  
+```{r}
+Trips %>% 
+  mutate(reg_date = as_date(sdate)) %>% 
+  right_join(ten_stationdate, by = c("sstation", "reg_date")) %>% 
+  mutate(week_day = wday(sdate, label = TRUE)) %>% 
+  group_by(client, week_day) %>% 
+  summarize(client_dep = n()) %>% 
+  mutate(prop =  client_dep/sum(client_dep)) %>% 
+  arrange(week_day) %>% 
+  pivot_wider(id_cols = client,
+              names_from = week_day,
+              values_from = prop)
+```
+
+The table allows us to see what day of the week each client type uses the stations with the most departures on a particular date. Of those station dates for example 36% of the casual riders used the bikes on a Sunday, while only 6% of Registered riders used them on that same date.
 
 **DID YOU REMEMBER TO GO BACK AND CHANGE THIS SET OF EXERCISES TO THE LARGER DATASET? IF NOT, DO THAT NOW.**
 
